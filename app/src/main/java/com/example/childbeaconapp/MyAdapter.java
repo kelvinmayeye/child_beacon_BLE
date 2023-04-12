@@ -27,8 +27,8 @@ public class MyAdapter extends RecyclerView.Adapter<MyViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
-        holder.nameView.setText(items.get(position).getName());
-        holder.emailView.setText(items.get(position).getEmail());
+        holder.devicenameView.setText(items.get(position).getDevicename());
+        holder.distanceView.setText(items.get(position).getDistance());
         holder.imageView.setImageResource(items.get(position).getImage());
     }
 

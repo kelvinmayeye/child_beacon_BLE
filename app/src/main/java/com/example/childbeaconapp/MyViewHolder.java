@@ -10,11 +10,11 @@ import androidx.recyclerview.widget.RecyclerView;
 public class MyViewHolder extends RecyclerView.ViewHolder {
 
     ImageView imageView;
-    TextView nameView,emailView;
+    TextView devicenameView,distanceView;
     public MyViewHolder(@NonNull View itemView) {
         super(itemView);
         imageView = itemView.findViewById(R.id.imageview);
-        nameView = itemView.findViewById(R.id.name);
-        emailView = itemView.findViewById(R.id.email);
+        devicenameView = itemView.findViewById(R.id.devicename);
+        distanceView = itemView.findViewById(R.id.distance);
     }
 }

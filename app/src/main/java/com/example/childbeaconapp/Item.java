@@ -1,30 +1,30 @@
 package com.example.childbeaconapp;
 
 public class Item {
-    String name;
-    String email;
+    String devicename;
+    String distance;
     int image;
 
-    public Item(String name, String email, int image) {
-        this.name = name;
-        this.email = email;
+    public Item(String devicename, String distance, int image) {
+        this.devicename = devicename;
+        this.distance = distance;
         this.image = image;
     }
 
-    public String getName() {
-        return name;
+    public String getDevicename() {
+        return devicename;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setDevicename(String devicename) {
+        this.devicename = devicename;
     }
 
-    public String getEmail() {
-        return email;
+    public String getDistance() {
+        return distance;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setDistance(String distance) {
+        this.distance = distance;
     }
 
     public int getImage() {

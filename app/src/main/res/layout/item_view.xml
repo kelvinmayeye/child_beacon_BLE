@@ -14,7 +14,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/name"
+        android:id="@+id/devicename"
         android:layout_toEndOf="@id/imageview"
         android:textColor="@color/white"
         android:textSize="20dp"
@@ -23,11 +23,11 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/email"
+        android:id="@+id/distance"
         android:layout_toEndOf="@id/imageview"
-        android:layout_below="@id/name"
+        android:layout_below="@id/devicename"
         android:textColor="@color/white"
-        android:text="email@gmail.com"/>
+        android:text="distance"/>
     
     <LinearLayout
         android:layout_width="match_parent"
