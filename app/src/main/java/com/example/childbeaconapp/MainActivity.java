@@ -1,123 +1,161 @@
 package com.example.childbeaconapp;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanResult;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
-import android.annotation.SuppressLint;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
-import android.widget.ListView;
-import android.widget.SimpleAdapter;
-import android.widget.TextView;
-import android.widget.Toast;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 public class MainActivity extends AppCompatActivity {
 
-    private static final int REQUEST_ENABLE_BT = 1;
-
-    private List<BluetoothDevice> nearbyDevices = new ArrayList<>();
-
+    BluetoothManager btManager;
+    BluetoothAdapter btAdapter;
+    BluetoothLeScanner btScanner;
+    Button startScanningButton;
+    Button stopScanningButton;
+    TextView peripheralTextView;
+    private final static int REQUEST_ENABLE_BT = 1;
+    private static final int REQUEST_CODE = 1;
+    private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        peripheralTextView = (TextView) findViewById(R.id.PeripheralTextView);
+        peripheralTextView.setMovementMethod(new ScrollingMovementMethod());
 
-        // Check if Bluetooth is supported on the device
-        BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-        BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
+        startScanningButton = (Button) findViewById(R.id.StartScanButton);
+        startScanningButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                startScanning();
+            }
+        });
 
-        if (bluetoothAdapter == null) {
-            // Device doesn't support Bluetooth
-            Toast.makeText(this, "Bluetooth is not supported on this device", Toast.LENGTH_LONG).show();
-            finish();
-            return;
+        stopScanningButton = (Button) findViewById(R.id.StopScanButton);
+        stopScanningButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                stopScanning();
+            }
+        });
+        stopScanningButton.setVisibility(View.INVISIBLE);
+
+        btManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        btAdapter = btManager.getAdapter();
+        btScanner = btAdapter.getBluetoothLeScanner();
+
+
+        if (btAdapter != null && !btAdapter.isEnabled()) {
+            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
         }
 
-        // Check if Bluetooth is turned on
-        if (!bluetoothAdapter.isEnabled()) {
-            // Prompt the user to turn on Bluetooth
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
-                return;
-            }
-            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-        } else {
-            // Bluetooth is already turned on, start scanning for nearby BLE devices
-            scanForNearbyDevices();
+        // Make sure we have access coarse location enabled, if not, prompt the user to enable it
+        if (this.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("This app needs location access");
+            builder.setMessage("Please grant location access so this app can detect peripherals.");
+            builder.setPositiveButton(android.R.string.ok, null);
+            builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
+                }
+            });
+            builder.show();
         }
     }
+
+    // Device scan callback.
+    private ScanCallback leScanCallback = new ScanCallback() {
+        @SuppressLint("MissingPermission")
+        @Override
+        public void onScanResult(int callbackType, ScanResult result) {
+            startScanning();
+            peripheralTextView.append("Device Name: " + result.getDevice() + " \nrssi: " + result.getRssi() + " dBm\n");
+
+            // auto scroll for text view
+            final int scrollAmount = peripheralTextView.getLayout().getLineTop(peripheralTextView.getLineCount()) - peripheralTextView.getHeight();
+            // if there is no need to scroll, scrollAmount will be <=0
+            if (scrollAmount > 0)
+                peripheralTextView.scrollTo(0, scrollAmount);
+        }
+    };
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case PERMISSION_REQUEST_COARSE_LOCATION: {
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    System.out.println("coarse location permission granted");
+                } else {
+                    final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setTitle("Functionality limited");
+                    builder.setMessage("Since location access has not been granted, this app will not be able to discover beacons when in the background.");
+                    builder.setPositiveButton(android.R.string.ok, null);
+                    builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
 
-        if (requestCode == REQUEST_ENABLE_BT) {
-            if (resultCode == RESULT_OK) {
-                // Bluetooth has been turned on, start scanning for nearby BLE devices
-                scanForNearbyDevices();
-            } else {
-                // User refused to turn on Bluetooth, show a message and exit the app
-                Toast.makeText(this, "Bluetooth must be turned on to use this app", Toast.LENGTH_LONG).show();
-                finish();
+                        @Override
+                        public void onDismiss(DialogInterface dialog) {
+                        }
+
+                    });
+                    builder.show();
+                }
+                return;
             }
         }
     }
 
-    @SuppressLint("MissingPermission")
-    private void scanForNearbyDevices() {
-        // TODO: Scan for nearby BLE devices and add them to the nearbyDevices list
+    public void startScanning() {
+        System.out.println("start scanning");
+        peripheralTextView.setText("");
+        startScanningButton.setVisibility(View.INVISIBLE);
+        stopScanningButton.setVisibility(View.VISIBLE);
+        AsyncTask.execute(new Runnable() {
+            @SuppressLint("MissingPermission")
+            @Override
+            public void run() {
 
-        List<Map<String, String>> data = new ArrayList<>();
-
-        // Iterate over the list of nearby BLE devices and add them to the data list
-        for (BluetoothDevice device : nearbyDevices) {
-            Map<String, String> item = new HashMap<>();
-            item.put("name", device.getName());
-            item.put("signal", device.getAddress() + " dBm");
-            data.add(item);
-        }
-
-        // Update the count of nearby devices
-        TextView countTextView = findViewById(R.id.count_text_view);
-        countTextView.setText("Scanned devices: " + nearbyDevices.size());
-
-        // Show or hide the empty view depending on whether any devices were found
-        TextView emptyView = findViewById(R.id.empty_view);
-        emptyView.setVisibility(nearbyDevices.isEmpty() ? View.VISIBLE : View.GONE);
-
-        // Log the list of nearby devices
-        Log.d("ScanNearbyDevices", "List of nearby devices: " + nearbyDevices.toString());
-
-        Log.e("some error","This log shows sample error");
-
-        String[] from = {"name", "signal"};
-        int[] to = {android.R.id.text1, android.R.id.text2};
-
-        SimpleAdapter adapter = new SimpleAdapter(this, data, android.R.layout.simple_list_item_2, from, to);
-        ListView listView = findViewById(R.id.device_list);
-        listView.setAdapter(adapter);
+                btScanner.startScan(leScanCallback);
+            }
+        });
     }
 
+    public void stopScanning() {
+        System.out.println("stopping scanning");
+        peripheralTextView.append("Stopped Scanning");
+        startScanningButton.setVisibility(View.VISIBLE);
+        stopScanningButton.setVisibility(View.INVISIBLE);
+        AsyncTask.execute(new Runnable() {
+            @SuppressLint("MissingPermission")
+            @Override
+            public void run() {
 
+                btScanner.stopScan(leScanCallback);
+            }
+        });
+    }
 }
