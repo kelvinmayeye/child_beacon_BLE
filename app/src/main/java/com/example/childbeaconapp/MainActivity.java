@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             startScanning();
-            peripheralTextView.append("Device Name: " + result.getDevice() + " \nrssi: " + result.getRssi() + " dBm\n");
+            peripheralTextView.append("Device Name: " + result.getScanRecord().getDeviceName() + " \nrssi: " + result.getRssi() + " dBm\n");
 
             // auto scroll for text view
             final int scrollAmount = peripheralTextView.getLayout().getLineTop(peripheralTextView.getLineCount()) - peripheralTextView.getHeight();
@@ -153,7 +153,6 @@ public class MainActivity extends AppCompatActivity {
             @SuppressLint("MissingPermission")
             @Override
             public void run() {
-
                 btScanner.stopScan(leScanCallback);
             }
         });
