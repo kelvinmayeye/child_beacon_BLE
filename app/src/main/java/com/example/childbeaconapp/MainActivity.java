@@ -19,11 +19,17 @@ import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -37,10 +43,18 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_CODE = 1;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
 
+    ListView deviceListView;
+    ArrayAdapter<String> deviceListAdapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+//        My thing are in here
+        deviceListView = findViewById(R.id.device_list_id);
+        deviceListAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, new ArrayList<>());
+        deviceListView.setAdapter(deviceListAdapter);
 
         peripheralTextView = (TextView) findViewById(R.id.PeripheralTextView);
         peripheralTextView.setMovementMethod(new ScrollingMovementMethod());
@@ -92,7 +106,22 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             startScanning();
-            peripheralTextView.append("Device Name: " + result.getScanRecord().getDeviceName() + " \nrssi: " + result.getRssi() + " dBm\n");
+            // initialize a set to store unique device names
+            Set<String> uniqueDeviceNames = new HashSet<>();
+
+// get the device name from the scan record
+            String deviceName = result.getScanRecord().getDeviceName();
+
+// check if device name is not null and has not been seen before
+            if (deviceName != null && !uniqueDeviceNames.contains(deviceName)) {
+
+                // add device name to set of unique names
+                uniqueDeviceNames.add(deviceName);
+
+                // add device name to adapter
+                deviceListAdapter.add(deviceName);
+            }
+
 
             // auto scroll for text view
             final int scrollAmount = peripheralTextView.getLayout().getLineTop(peripheralTextView.getLineCount()) - peripheralTextView.getHeight();
@@ -131,14 +160,13 @@ public class MainActivity extends AppCompatActivity {
 
     public void startScanning() {
         System.out.println("start scanning");
-        peripheralTextView.setText("");
+        deviceListAdapter.clear();
         startScanningButton.setVisibility(View.INVISIBLE);
         stopScanningButton.setVisibility(View.VISIBLE);
         AsyncTask.execute(new Runnable() {
             @SuppressLint("MissingPermission")
             @Override
             public void run() {
-
                 btScanner.startScan(leScanCallback);
             }
         });
@@ -156,5 +184,7 @@ public class MainActivity extends AppCompatActivity {
                 btScanner.stopScan(leScanCallback);
             }
         });
+
+        deviceListView.setAdapter(null);
     }
 }

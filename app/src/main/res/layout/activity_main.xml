@@ -41,4 +41,10 @@
         android:textSize="16dp"
         android:layout_marginStart="6dp"/>
 
+    <ListView
+        android:id="@+id/device_list_id"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingTop="120dp"/>
+
 </RelativeLayout>
