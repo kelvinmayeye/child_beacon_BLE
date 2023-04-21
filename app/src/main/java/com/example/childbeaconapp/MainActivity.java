@@ -15,7 +15,9 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
@@ -27,6 +29,7 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -42,6 +45,10 @@ public class MainActivity extends AppCompatActivity {
     private final static int REQUEST_ENABLE_BT = 1;
     private static final int REQUEST_CODE = 1;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
+
+    private static final long DEVICE_FOUND_DELAY = 30000; // 30 seconds
+    private static final long DEVICE_LIST_DISPLAY_TIME = 30000; // 30 seconds
+    private Handler mHandler = new Handler();
 
     ListView deviceListView;
     ArrayAdapter<String> deviceListAdapter;
@@ -102,32 +109,51 @@ public class MainActivity extends AppCompatActivity {
 
     // Device scan callback.
     private ScanCallback leScanCallback = new ScanCallback() {
+        private boolean mIsDeviceFound = false;
+        private Set<String> mUniqueDeviceNames = new HashSet<>();
+
         @SuppressLint("MissingPermission")
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
-            startScanning();
-            // initialize a set to store unique device names
-            Set<String> uniqueDeviceNames = new HashSet<>();
-
-// get the device name from the scan record
+            // Check if device name is not null and has not been seen before
             String deviceName = result.getScanRecord().getDeviceName();
+            if (deviceName != null && !mUniqueDeviceNames.contains(deviceName)) {
+                mUniqueDeviceNames.add(deviceName);
+                mIsDeviceFound = true;
 
-// check if device name is not null and has not been seen before
-            if (deviceName != null && !uniqueDeviceNames.contains(deviceName)) {
+                // calculate distance based on RSSI
+                
+//                int txPower = 0;
+//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//                    txPower = result.getTxPower();
+//                }
+//                double n = 2.0; // assume signal propagation constant of 2.0
+//                double distance = Math.pow(10, ((txPower - result.getRssi()) / (10 * n)));
 
-                // add device name to set of unique names
-                uniqueDeviceNames.add(deviceName);
+               // deviceListAdapter.add(deviceName + "\n(Distance: " + distance + " m)\n");
+                deviceListAdapter.add(deviceName + "\n(Distance (rssi): " + result.getRssi() + " dBm) \n");
 
-                // add device name to adapter
-                deviceListAdapter.add(deviceName);
             }
 
-
-            // auto scroll for text view
-            final int scrollAmount = peripheralTextView.getLayout().getLineTop(peripheralTextView.getLineCount()) - peripheralTextView.getHeight();
-            // if there is no need to scroll, scrollAmount will be <=0
-            if (scrollAmount > 0)
-                peripheralTextView.scrollTo(0, scrollAmount);
+            // Stop scanning after DEVICE_FOUND_DELAY
+            mHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    stopScanning();
+                    // Display the list of available devices for DEVICE_LIST_DISPLAY_TIME
+                    peripheralTextView.setText(deviceListAdapter.toString());
+                    mHandler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            // Reset the adapter and start scanning again
+                            deviceListAdapter.clear();
+                            mUniqueDeviceNames.clear();
+                            mIsDeviceFound = false;
+                            startScanning();
+                        }
+                    }, DEVICE_LIST_DISPLAY_TIME);
+                }
+            }, DEVICE_FOUND_DELAY);
         }
     };
 
@@ -139,6 +165,7 @@ public class MainActivity extends AppCompatActivity {
             case PERMISSION_REQUEST_COARSE_LOCATION: {
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     System.out.println("coarse location permission granted");
+                    Log.i("location", "location permission granted");
                 } else {
                     final AlertDialog.Builder builder = new AlertDialog.Builder(this);
                     builder.setTitle("Functionality limited");
@@ -174,6 +201,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void stopScanning() {
         System.out.println("stopping scanning");
+        Log.i("stop scan", "stopping scanning");
         peripheralTextView.append("Stopped Scanning");
         startScanningButton.setVisibility(View.VISIBLE);
         stopScanningButton.setVisibility(View.INVISIBLE);
