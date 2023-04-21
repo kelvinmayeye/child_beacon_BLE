@@ -25,6 +25,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -128,10 +129,19 @@ public class MainActivity extends AppCompatActivity {
                         deviceListAdapter.clear();
                         deviceListAdapter.add(deviceName + "\nDistance (rssi): " + latestResult.getRssi() + " dBm \n");
                         deviceListAdapter.notifyDataSetChanged(); // Notify the adapter of the data change
+
+                        System.out.println(latestResult.getRssi());
+
+                        // Display toast message if RSSI is greater than -70
+                        if (latestResult.getRssi() < -70) {
+                            Toast.makeText(getApplicationContext(), "RSSI value is greater than -70", Toast.LENGTH_SHORT).show();
+                        }
                     }
+
                 });
             }
         }
+
     };
 
 
@@ -190,19 +200,5 @@ public class MainActivity extends AppCompatActivity {
         });
 
       //  deviceListView.setAdapter(null);
-    }
-
-    public void updateScanning() {
-        System.out.println("update scanning");
-        deviceListAdapter.clear();
-        startScanningButton.setVisibility(View.INVISIBLE);
-        stopScanningButton.setVisibility(View.VISIBLE);
-        AsyncTask.execute(new Runnable() {
-            @SuppressLint("MissingPermission")
-            @Override
-            public void run() {
-                btScanner.startScan(leScanCallback);
-            }
-        });
     }
 }
