@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        My thing are in here
+//
         deviceListView = findViewById(R.id.device_list_id);
         deviceListAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, new ArrayList<>());
         deviceListView.setAdapter(deviceListAdapter);
