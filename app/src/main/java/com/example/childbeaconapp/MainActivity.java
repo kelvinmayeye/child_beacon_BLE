@@ -26,6 +26,12 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Context;
+import android.os.Build;
+import androidx.core.app.NotificationCompat;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -46,13 +52,25 @@ public class MainActivity extends AppCompatActivity {
     private final static int REQUEST_ENABLE_BT = 1;
     private static final int REQUEST_CODE = 1;
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
-
-    private static final long DEVICE_FOUND_DELAY = 30000; // 30 seconds
-    private static final long DEVICE_LIST_DISPLAY_TIME = 30000; // 30 seconds
     private Handler mHandler = new Handler();
+
+    private static final String NOTIFICATION_CHANNEL_ID = "1";
+    private static final CharSequence NOTIFICATION_CHANNEL_NAME = "Channel Name";
+    private NotificationManager notificationManager;
 
     ListView deviceListView;
     ArrayAdapter<String> deviceListAdapter;
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    NOTIFICATION_CHANNEL_ID,
+                    NOTIFICATION_CHANNEL_NAME,
+                    NotificationManager.IMPORTANCE_HIGH);
+            notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -134,7 +152,20 @@ public class MainActivity extends AppCompatActivity {
 
                         // Display toast message if RSSI is greater than -70
                         if (latestResult.getRssi() < -70) {
-                            Toast.makeText(getApplicationContext(), "RSSI value is greater than -70", Toast.LENGTH_SHORT).show();
+                            // Build the notification
+                            NotificationCompat.Builder builder = new NotificationCompat.Builder(MainActivity.this,NOTIFICATION_CHANNEL_ID)
+                                    .setSmallIcon(R.drawable.b)
+                                    .setContentTitle("My child app")
+                                    .setContentText("Child is out of geo-fance")
+                                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                                    .setAutoCancel(true);
+
+                            // Show the notification
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                createNotificationChannel();
+                            }
+                            int notificationId = 1; // ID for the notification
+                            notificationManager.notify(notificationId, builder.build());
                         }
                     }
 
