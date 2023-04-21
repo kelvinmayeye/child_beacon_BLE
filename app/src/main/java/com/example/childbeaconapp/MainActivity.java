@@ -111,44 +111,26 @@ public class MainActivity extends AppCompatActivity {
     private ScanCallback leScanCallback = new ScanCallback() {
         private boolean mIsDeviceFound = false;
         private Set<String> mUniqueDeviceNames = new HashSet<>();
+        private ScanResult latestResult;
 
         @SuppressLint("MissingPermission")
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
-            // Check if device name is not null and has not been seen before
+            // Check if device name is not null
             String deviceName = result.getScanRecord().getDeviceName();
-            if (deviceName != null && !mUniqueDeviceNames.contains(deviceName)) {
-                mUniqueDeviceNames.add(deviceName);
-                mIsDeviceFound = true;
+            if (deviceName != null) {
+                latestResult = result;
 
                 // Update the deviceListAdapter with the new device
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        deviceListAdapter.add(deviceName + "\nDistance (rssi): " + result.getRssi() + " dBm \n");
+                        deviceListAdapter.clear();
+                        deviceListAdapter.add(deviceName + "\nDistance (rssi): " + latestResult.getRssi() + " dBm \n");
                         deviceListAdapter.notifyDataSetChanged(); // Notify the adapter of the data change
                     }
                 });
             }
-
-            mHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    stopScanning();
-                    // Display the list of available devices for DEVICE_LIST_DISPLAY_TIME
-                    peripheralTextView.setText(deviceListAdapter.toString());
-                    mHandler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            // Reset the adapter and start scanning again
-                            deviceListAdapter.clear();
-                            mUniqueDeviceNames.clear();
-                            mIsDeviceFound = false;
-                            updateScanning();
-                        }
-                    }, DEVICE_LIST_DISPLAY_TIME);
-                }
-            }, DEVICE_FOUND_DELAY);
         }
     };
 
@@ -196,9 +178,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void stopScanning() {
-        System.out.println("stopping scanning");
         Log.i("stop scan", "stopping scanning");
-        peripheralTextView.append("Stopped Scanning");
         startScanningButton.setVisibility(View.VISIBLE);
         stopScanningButton.setVisibility(View.INVISIBLE);
         AsyncTask.execute(new Runnable() {
