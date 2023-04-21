@@ -121,21 +121,10 @@ public class MainActivity extends AppCompatActivity {
                 mUniqueDeviceNames.add(deviceName);
                 mIsDeviceFound = true;
 
-                // calculate distance based on RSSI
-                
-//                int txPower = 0;
-//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//                    txPower = result.getTxPower();
-//                }
-//                double n = 2.0; // assume signal propagation constant of 2.0
-//                double distance = Math.pow(10, ((txPower - result.getRssi()) / (10 * n)));
-
-               // deviceListAdapter.add(deviceName + "\n(Distance: " + distance + " m)\n");
                 deviceListAdapter.add(deviceName + "\n(Distance (rssi): " + result.getRssi() + " dBm) \n");
 
             }
 
-            // Stop scanning after DEVICE_FOUND_DELAY
             mHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
@@ -149,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
                             deviceListAdapter.clear();
                             mUniqueDeviceNames.clear();
                             mIsDeviceFound = false;
-                            startScanning();
+                            updateScanning();
                         }
                     }, DEVICE_LIST_DISPLAY_TIME);
                 }
@@ -214,5 +203,19 @@ public class MainActivity extends AppCompatActivity {
         });
 
         deviceListView.setAdapter(null);
+    }
+
+    public void updateScanning() {
+        System.out.println("update scanning");
+        deviceListAdapter.clear();
+        startScanningButton.setVisibility(View.INVISIBLE);
+        stopScanningButton.setVisibility(View.VISIBLE);
+        AsyncTask.execute(new Runnable() {
+            @SuppressLint("MissingPermission")
+            @Override
+            public void run() {
+                btScanner.startScan(leScanCallback);
+            }
+        });
     }
 }
