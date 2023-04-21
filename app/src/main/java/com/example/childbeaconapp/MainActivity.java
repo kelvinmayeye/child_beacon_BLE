@@ -121,8 +121,14 @@ public class MainActivity extends AppCompatActivity {
                 mUniqueDeviceNames.add(deviceName);
                 mIsDeviceFound = true;
 
-                deviceListAdapter.add(deviceName + "\n(Distance (rssi): " + result.getRssi() + " dBm) \n");
-
+                // Update the deviceListAdapter with the new device
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        deviceListAdapter.add(deviceName + "\nDistance (rssi): " + result.getRssi() + " dBm \n");
+                        deviceListAdapter.notifyDataSetChanged(); // Notify the adapter of the data change
+                    }
+                });
             }
 
             mHandler.postDelayed(new Runnable() {
@@ -145,6 +151,7 @@ public class MainActivity extends AppCompatActivity {
             }, DEVICE_FOUND_DELAY);
         }
     };
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
@@ -202,7 +209,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        deviceListView.setAdapter(null);
+      //  deviceListView.setAdapter(null);
     }
 
     public void updateScanning() {
