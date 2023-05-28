@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String NOTIFICATION_CHANNEL_ID = "1";
     private static final CharSequence NOTIFICATION_CHANNEL_NAME = "Channel Name";
     private NotificationManager notificationManager;
+    private int meterDistance = 0;
 
     ListView deviceListView;
     ArrayAdapter<String> deviceListAdapter;
@@ -145,7 +146,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         deviceListAdapter.clear();
-                        deviceListAdapter.add(deviceName + "\nDistance (rssi): " + latestResult.getRssi() + " dBm \n");
+                        deviceListAdapter.add(deviceName + "\nDistance : " + getMeter(latestResult.getRssi()) + " M \n");
                         deviceListAdapter.notifyDataSetChanged(); // Notify the adapter of the data change
 
                         System.out.println(latestResult.getRssi());
@@ -231,5 +232,11 @@ public class MainActivity extends AppCompatActivity {
         });
 
       //  deviceListView.setAdapter(null);
+    }
+
+    private int getMeter(int rssi) {
+        int i = rssi * -1;
+        meterDistance = i/30;
+        return meterDistance;
     }
 }
