@@ -25,6 +25,13 @@
         android:theme="@style/Theme.ChildBeaconApp"
         tools:targetApi="31">
         <activity
+            android:name=".DeviceScanningActivity"
+            android:exported="false">
+            <meta-data
+                android:name="android.app.lib_name"
+                android:value="" />
+        </activity>
+        <activity
             android:name=".SplashActivity"
             android:exported="true">
             <intent-filter>
