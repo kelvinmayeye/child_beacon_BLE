@@ -13,10 +13,12 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -24,10 +26,12 @@ import android.os.Handler;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -103,6 +107,14 @@ public class DeviceScanningActivity extends AppCompatActivity {
             });
             builder.show();
         }
+
+        deviceListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                String selectedDevice = (String) parent.getItemAtPosition(position);
+                showSaveDeviceDialog(selectedDevice);
+            }
+        });
     }
 
     // Device scan callback.
@@ -202,4 +214,44 @@ public class DeviceScanningActivity extends AppCompatActivity {
         meterDistance = i/30;
         return meterDistance;
     }
+
+    private void saveDeviceToDeviceList(String deviceInfo) {
+        DeviceDbHelper dbHelper = new DeviceDbHelper(this);
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+        String[] parts = deviceInfo.split("\nMAC: ");
+        String deviceName = parts[0];
+        String deviceMacAddress = parts[1];
+
+        ContentValues values = new ContentValues();
+        values.put("name", deviceName);
+        values.put("mac_address", deviceMacAddress);
+
+        long newRowId = db.insert("devices", null, values);
+        if (newRowId != -1) {
+            Toast.makeText(this, "Device saved: " + deviceInfo, Toast.LENGTH_SHORT).show();
+            // Navigate to MainActivity
+            Intent intent = new Intent(this, MainActivity.class);
+            startActivity(intent);
+
+        } else {
+            Toast.makeText(this, "Failed to save device.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void showSaveDeviceDialog(String deviceInfo) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Save Device");
+        builder.setMessage("Do you want to save this device?\n\n" + deviceInfo);
+        builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                saveDeviceToDeviceList(deviceInfo);
+            }
+        });
+        builder.setNegativeButton("No", null);
+        builder.show();
+    }
+
+
 }
