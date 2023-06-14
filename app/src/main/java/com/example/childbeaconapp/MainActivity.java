@@ -18,6 +18,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.location.LocationManager;
+import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -64,6 +65,10 @@ public class MainActivity extends AppCompatActivity {
     private NotificationManager notificationManager;
     private int meterDistance = 0;
 
+    private MediaPlayer mediaPlayer;
+    private boolean isAlarmPlaying = false;
+
+
     ListView deviceListView;
     ArrayAdapter<String> deviceListAdapter;
 
@@ -83,7 +88,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//
         deviceListView = findViewById(R.id.device_list_id);
         deviceListAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, new ArrayList<>());
         deviceListView.setAdapter(deviceListAdapter);
@@ -172,6 +176,15 @@ public class MainActivity extends AppCompatActivity {
                             }
                             int notificationId = 1; // ID for the notification
                             notificationManager.notify(notificationId, builder.build());
+
+                            if (mediaPlayer != null && !mediaPlayer.isPlaying()) {
+                                mediaPlayer.start();
+                            }
+                            // Rest of your code...
+                        } else {
+                            if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+                                mediaPlayer.pause();
+                            }
                         }
                     }
 
@@ -215,6 +228,9 @@ public class MainActivity extends AppCompatActivity {
         deviceListAdapter.clear();
         startScanningButton.setVisibility(View.INVISIBLE);
         stopScanningButton.setVisibility(View.VISIBLE);
+        mediaPlayer = MediaPlayer.create(MainActivity.this, R.raw.alarm_r);
+        mediaPlayer.setLooping(true);
+
 
         // Get the latest device name and MAC address from the database
         DeviceDbHelper dbHelper = new DeviceDbHelper(this);
@@ -275,5 +291,19 @@ public class MainActivity extends AppCompatActivity {
         int i = rssi * -1;
         meterDistance = i/30;
         return meterDistance;
+    }
+
+    private void releaseMediaPlayer() {
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        releaseMediaPlayer();
+        super.onDestroy();
     }
 }
