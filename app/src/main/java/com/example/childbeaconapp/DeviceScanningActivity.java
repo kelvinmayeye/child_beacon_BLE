@@ -113,11 +113,12 @@ public class DeviceScanningActivity extends AppCompatActivity {
         @SuppressLint("MissingPermission")
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
-            // Check if device name is not null
+            // Check if device name and address are not null
             String deviceName = result.getScanRecord().getDeviceName();
-            if (deviceName != null) {
+            String deviceAddress = result.getDevice().getAddress();
+            if (deviceName != null && deviceAddress != null) {
                 mIsDeviceFound = true;
-                mUniqueDeviceNames.add(deviceName);
+                mUniqueDeviceNames.add(deviceName + "\nMAC: " + deviceAddress);
 
                 // Update the deviceListAdapter with the new devices
                 runOnUiThread(new Runnable() {
