@@ -10,7 +10,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/count_text_view"
-        android:text="Start Scan The BLE Beacon"
+        android:text="Start Scan your child beacon"
         android:layout_centerHorizontal="true"
         android:textSize="20dp"
         android:textColor="@color/black"/>

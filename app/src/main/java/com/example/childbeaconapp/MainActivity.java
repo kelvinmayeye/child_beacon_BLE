@@ -160,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
 
                         System.out.println(latestResult.getRssi());
 
-                        // Display toast message if RSSI is greater than -70
+
                         if (latestResult.getRssi() < -70) {
                             // Build the notification
                             NotificationCompat.Builder builder = new NotificationCompat.Builder(MainActivity.this,NOTIFICATION_CHANNEL_ID)
@@ -284,7 +284,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-      //  deviceListView.setAdapter(null);
     }
 
     private int getMeter(int rssi) {
