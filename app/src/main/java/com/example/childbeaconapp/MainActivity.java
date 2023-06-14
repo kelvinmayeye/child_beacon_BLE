@@ -7,11 +7,15 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
+import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.AsyncTask;
@@ -38,6 +42,7 @@ import androidx.core.app.ActivityCompat;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -210,11 +215,43 @@ public class MainActivity extends AppCompatActivity {
         deviceListAdapter.clear();
         startScanningButton.setVisibility(View.INVISIBLE);
         stopScanningButton.setVisibility(View.VISIBLE);
+
+        // Get the latest device name and MAC address from the database
+        DeviceDbHelper dbHelper = new DeviceDbHelper(this);
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        String[] projection = {"name", "mac_address"};
+        String sortOrder = "rowid DESC";
+        Cursor cursor = db.query("devices", projection, null, null, null, null, sortOrder, "1");
+
+        String deviceName = null;
+        String deviceMacAddress = null;
+        if (cursor.moveToFirst()) {
+            deviceName = cursor.getString(cursor.getColumnIndexOrThrow("name"));
+            deviceMacAddress = cursor.getString(cursor.getColumnIndexOrThrow("mac_address"));
+        }
+        cursor.close();
+
+        // Scan for the latest device
+        final String finalDeviceName = deviceName;
+        final String finalDeviceMacAddress = deviceMacAddress;
         AsyncTask.execute(new Runnable() {
             @SuppressLint("MissingPermission")
             @Override
             public void run() {
-                btScanner.startScan(leScanCallback);
+                if (finalDeviceName != null && finalDeviceMacAddress != null) {
+                    // Scan for the specified device name and MAC address
+                    ScanFilter scanFilter = new ScanFilter.Builder()
+                            .setDeviceName(finalDeviceName)
+                            .setDeviceAddress(finalDeviceMacAddress)
+                            .build();
+                    ScanSettings scanSettings = new ScanSettings.Builder()
+                            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                            .build();
+                    btScanner.startScan(Collections.singletonList(scanFilter), scanSettings, leScanCallback);
+                } else {
+                    // No device found in the database, start a general scan
+                    btScanner.startScan(leScanCallback);
+                }
             }
         });
     }
