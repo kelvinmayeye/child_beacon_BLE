@@ -46,24 +46,11 @@ public class DeviceScanningActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
     private Handler mHandler = new Handler();
 
-    private static final String NOTIFICATION_CHANNEL_ID = "1";
-    private static final CharSequence NOTIFICATION_CHANNEL_NAME = "Channel Name";
-    private NotificationManager notificationManager;
     private int meterDistance = 0;
 
     ListView deviceListView;
     ArrayAdapter<String> deviceListAdapter;
 
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    NOTIFICATION_CHANNEL_ID,
-                    NOTIFICATION_CHANNEL_NAME,
-                    NotificationManager.IMPORTANCE_HIGH);
-            notificationManager = getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-        }
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,7 +109,6 @@ public class DeviceScanningActivity extends AppCompatActivity {
     private ScanCallback leScanCallback = new ScanCallback() {
         private boolean mIsDeviceFound = false;
         private Set<String> mUniqueDeviceNames = new HashSet<>();
-        private ScanResult latestResult;
 
         @SuppressLint("MissingPermission")
         @Override
@@ -130,42 +116,28 @@ public class DeviceScanningActivity extends AppCompatActivity {
             // Check if device name is not null
             String deviceName = result.getScanRecord().getDeviceName();
             if (deviceName != null) {
-                latestResult = result;
+                mIsDeviceFound = true;
+                mUniqueDeviceNames.add(deviceName);
 
-                // Update the deviceListAdapter with the new device
+                // Update the deviceListAdapter with the new devices
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         deviceListAdapter.clear();
-                        deviceListAdapter.add(deviceName + "\nDistance : " + getMeter(latestResult.getRssi()) + " M \n");
-                        deviceListAdapter.notifyDataSetChanged(); // Notify the adapter of the data change
-
-                        System.out.println(latestResult.getRssi());
-
-                        // Display toast message if RSSI is greater than -70
-                        if (latestResult.getRssi() < -70) {
-                            // Build the notification
-                            NotificationCompat.Builder builder = new NotificationCompat.Builder(DeviceScanningActivity.this,NOTIFICATION_CHANNEL_ID)
-                                    .setSmallIcon(R.drawable.b)
-                                    .setContentTitle("My child app")
-                                    .setContentText("Child is out of geo-fance")
-                                    .setPriority(NotificationCompat.PRIORITY_HIGH)
-                                    .setAutoCancel(true);
-
-                            // Show the notification
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                createNotificationChannel();
-                            }
-                            int notificationId = 1; // ID for the notification
-                            notificationManager.notify(notificationId, builder.build());
-                        }
+                        deviceListAdapter.addAll(mUniqueDeviceNames);
+                        deviceListAdapter.notifyDataSetChanged();
                     }
-
                 });
             }
         }
 
+        @Override
+        public void onScanFailed(int errorCode) {
+            super.onScanFailed(errorCode);
+            // Handle scan failure
+        }
     };
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
